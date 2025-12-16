@@ -8,8 +8,8 @@ import os
 # 1. Drop unused columns
 # ---------------------------
 def drop_unused_columns(df: pd.DataFrame):
-    cols_to_drop = ["label", "difficulty"]
-    df = df.drop(columns=[col for col in cols_to_drop if col in df.columns], errors="ignore")
+    cols_to_drop = ["label", "difficulty", "id", "attack_cat"]
+    df = df.drop(columns=[c for c in cols_to_drop if c in df.columns], errors="ignore")
     return df
 
 # ---------------------------

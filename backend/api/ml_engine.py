@@ -14,6 +14,7 @@ MODEL_DIR = os.path.join(PROJECT_ROOT, "ml", "models")
 
 MODEL_PATH = os.path.join(MODEL_DIR, "lstm_autoencoder.h5")
 SCALER_PATH = os.path.join(MODEL_DIR, "scaler.pkl")
+ENCODER_PATH = os.path.join(MODEL_DIR, "encoders.pkl")
 
 # ---------------------------------------------
 # Load model and scaler safely
@@ -29,6 +30,9 @@ model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 with open(SCALER_PATH, "rb") as f:
     scaler = pickle.load(f)
 
+with open(ENCODER_PATH, "rb") as f:
+    encoders = pickle.load(f)
+
 # Number of features used during training
 EXPECTED_FEATURES = scaler.n_features_in_
 
@@ -38,18 +42,20 @@ EXPECTED_FEATURES = scaler.n_features_in_
 # ---------------------------------------------
 def run_inference(feature_dict):
 
-    # Reorder according to scaler.feature_names_in_
+    # Encode categorical values
+    for col, encoder in encoders.items():
+        if col in feature_dict:
+            feature_dict[col] = encoder.transform([feature_dict[col]])[0]
+
+    # Order features exactly as training
     ordered = [feature_dict[f] for f in scaler.feature_names_in_]
 
-    x = np.array(ordered).reshape(1, -1)
-
+    x = np.array(ordered, dtype=float).reshape(1, -1)
     x_scaled = scaler.transform(x)
     x_lstm = x_scaled.reshape(1, 1, x_scaled.shape[1])
 
     reconstructed = model.predict(x_lstm)
     mse = float(np.mean((x_lstm - reconstructed) ** 2))
-
     anomaly = mse > 0.01
 
     return ordered, mse, anomaly
-
