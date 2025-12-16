@@ -1,50 +1,48 @@
-export default function UploadDataset({ setResults }) {
+
+import { useRef, useState } from "react";
+
+export default function UploadDataset() {
+  const fileInputRef = useRef(null);
+  const [fileName, setFileName] = useState("");
+
+  const handleButtonClick = () => {
+    fileInputRef.current.click();
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    // For now just demo result (replace with API call later)
-    console.log("Selected file:", file.name);
-
-    // Example mock result
-    setResults([
-      { is_anomaly: false },
-      { is_anomaly: true },
-      { is_anomaly: false },
-    ]);
+    if (file) {
+      setFileName(file.name);
+      console.log("Selected file:", file);
+      // later: send file to backend
+    }
   };
 
   return (
-    <div style={styles.wrapper}>
-      <label style={styles.uploadBox}>
-        📁 Upload Network Traffic File
-        <input
-          type="file"
-          accept=".csv"
-          hidden
-          onChange={handleFileChange}
-        />
-      </label>
+    <div className="card">
+      <h3>Upload Network Traffic</h3>
+      <p>Upload CSV file to detect anomalies</p>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        accept=".csv"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
+      {/* Styled button */}
+      <button className="primary-btn" onClick={handleButtonClick}>
+        Upload File
+      </button>
+
+      {/* Show selected file */}
+      {fileName && (
+        <p style={{ marginTop: "10px", fontSize: "14px", color: "#555" }}>
+          Selected: <strong>{fileName}</strong>
+        </p>
+      )}
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "30px",
-  },
-
-  uploadBox: {
-    background: " #2563eb",
-    color: "#ffffff",
-    padding: "16px 28px",
-    borderRadius: "12px",
-    fontSize: "16px",
-    fontWeight: "500",
-    cursor: "pointer",
-    boxShadow: "0 8px 18px rgba(2,6,23,0.4)",
-    transition: "transform 0.2s ease",
-  },
-};
