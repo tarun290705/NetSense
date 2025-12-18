@@ -138,3 +138,9 @@ body {
     width: 100%;
   }
 }
+
+.error-text {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}

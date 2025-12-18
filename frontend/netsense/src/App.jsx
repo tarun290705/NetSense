@@ -9,7 +9,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/analytics" element={<Analytics />} />
-      <Route path="/alerts" element={<Alerts />} />
+      {/* <Route path="/alerts" element={<Alerts />} /> */}
       <Route path="/loghistory" element={<TrainModel />} />
     </Routes>
   );

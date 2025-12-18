@@ -9,7 +9,7 @@ export default function Sidebar() {
       <nav className="menu">
         <NavLink to="/" end>📊 Dashboard</NavLink>
         <NavLink to="/analytics">📈 Analytics</NavLink>
-        <NavLink to="/alerts">🚨 Alerts</NavLink>
+        {/* <NavLink to="/alerts">🚨 Alerts</NavLink> */}
        <NavLink to="/logHistory">📑 Log History</NavLink>
       </nav>
     </aside>
