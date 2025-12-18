@@ -4,12 +4,19 @@ import pickle
 import os
 import pandas as pd
 from django.conf import settings
+from collections import deque
 
 # =====================================================
-# Paths (ML folder is OUTSIDE backend)
+# Dynamic threshold buffer
 # =====================================================
-BASE_DIR = settings.BASE_DIR                 # backend/
-PROJECT_ROOT = os.path.dirname(BASE_DIR)     # NetSense/
+MSE_BUFFER = deque(maxlen=500)
+WARMUP_SIZE = 100   # 🔑 important
+
+# =====================================================
+# Paths
+# =====================================================
+BASE_DIR = settings.BASE_DIR
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
 MODEL_DIR = os.path.join(PROJECT_ROOT, "ml", "models")
 
@@ -28,7 +35,7 @@ with open(SCALER_PATH, "rb") as f:
 with open(ENCODER_PATH, "rb") as f:
     encoders = pickle.load(f)
 
-FEATURE_ORDER = list(scaler.feature_names_in_)  # exact training order
+FEATURE_ORDER = list(scaler.feature_names_in_)
 
 # =====================================================
 # Inference
@@ -39,7 +46,7 @@ def run_inference(raw_features: dict):
     """
 
     # -----------------------------------------
-    # Convert to DataFrame (IMPORTANT FIX)
+    # Convert to DataFrame
     # -----------------------------------------
     df = pd.DataFrame([raw_features])
 
@@ -48,42 +55,56 @@ def run_inference(raw_features: dict):
     # -----------------------------------------
     for col, encoder in encoders.items():
         if col in df.columns:
-            df[col] = encoder.transform(df[col].astype(str))
+            try:
+                df[col] = encoder.transform(df[col].astype(str))
+            except ValueError:
+                df[col] = 0
         else:
-            # Missing categorical → default 0
             df[col] = 0
 
     # -----------------------------------------
-    # Ensure all features exist (NO KeyError)
+    # Ensure all features exist
     # -----------------------------------------
     for col in FEATURE_ORDER:
         if col not in df.columns:
             df[col] = 0
 
     # -----------------------------------------
-    # Reorder columns EXACTLY like training
+    # Reorder features
     # -----------------------------------------
     df = df[FEATURE_ORDER]
 
     # -----------------------------------------
-    # Scale
+    # Scale + LSTM reshape
     # -----------------------------------------
     x_scaled = scaler.transform(df)
-
-    # -----------------------------------------
-    # LSTM expects 3D
-    # -----------------------------------------
     x_lstm = x_scaled.reshape(1, 1, x_scaled.shape[1])
 
     # -----------------------------------------
     # Predict
     # -----------------------------------------
     reconstructed = model.predict(x_lstm, verbose=0)
-
     mse = float(np.mean((x_lstm - reconstructed) ** 2))
-    is_anomaly = mse > 0.01
 
     # -----------------------------------------
-    # Return SAFE python types
+    # Buffer update
     # -----------------------------------------
-    return df.iloc[0].to_dict(), mse, is_anomaly
+    MSE_BUFFER.append(mse)
+
+    # -----------------------------------------
+    # Dynamic threshold logic (FIXED)
+    # -----------------------------------------
+    MIN_BUFFER = 50      # warm-up packets
+    STD_FACTOR = 3       # sensitivity control
+
+    if len(MSE_BUFFER) < MIN_BUFFER:
+        # 🚨 Warm-up phase → never classify anomaly
+        threshold = None
+        is_anomaly = False
+    else:
+        mean = np.mean(MSE_BUFFER)
+        std = np.std(MSE_BUFFER)
+        threshold = mean + STD_FACTOR * std
+        is_anomaly = mse > threshold
+
+    return df.iloc[0].to_dict(), mse, is_anomaly, threshold

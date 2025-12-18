@@ -15,16 +15,30 @@ class NetworkLogListCreate(ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Extract raw ML features
         raw_features = serializer.validated_data.get("features")
 
-        # Run ML inference
-        feature_list, mse, is_anomaly = run_inference(raw_features)
+        features_dict, mse, is_anomaly, threshold = run_inference(raw_features)
 
-        # ----------------------------
-        # STORE ONLY IF ANOMALY
-        # ----------------------------
-        if is_anomaly:
+    # =================================================
+    # SHOW ALL PACKETS IN TERMINAL
+    # =================================================
+        print("=" * 60)
+        print("📦 PACKET RECEIVED")
+        print(f"MSE        : {mse:.6f}")
+
+        if threshold is None:
+            print("Threshold  : WARM-UP")
+            print("Status     : Learning baseline")
+        else:
+            print(f"Threshold  : {threshold:.6f}")
+            print(f"Anomaly    : {is_anomaly}")
+
+        print("=" * 60)
+
+    # =================================================
+    # STORE ONLY TRUE ANOMALIES
+    # =================================================
+        if threshold is not None and is_anomaly:
             instance = serializer.save(
                 reconstruction_error=mse,
                 is_anomaly=True
@@ -35,13 +49,12 @@ class NetworkLogListCreate(ListCreateAPIView):
 
             return Response(response_data, status=status.HTTP_201_CREATED)
 
-        # ----------------------------
-        # NORMAL TRAFFIC → DO NOT STORE
-        # ----------------------------
+    # Normal or warm-up traffic
         return Response(
             {
-                "message": "✅ Normal traffic detected (not stored)",
+                "message": "✅ Normal traffic (not stored)",
                 "reconstruction_error": mse,
+                "threshold": threshold,
                 "is_anomaly": False
             },
             status=status.HTTP_200_OK
