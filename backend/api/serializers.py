@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import AnomalyRecord
 
 class NetworkLogSerializer(serializers.ModelSerializer):
-    # features = raw ML feature dictionary (JSON incoming)
     features = serializers.JSONField(write_only=True)
 
     class Meta:
@@ -12,7 +11,7 @@ class NetworkLogSerializer(serializers.ModelSerializer):
             "dst_ip",
             "protocol",
             "length",
-            "features",  # ← important
+            "features", 
             "reconstruction_error",
             "is_anomaly",
         ]

@@ -19,7 +19,6 @@ def detect_anomaly(df):
 
     model = load_model(MODEL_PATH)
 
-    # Assume same timesteps used in training
     timesteps = 10
     X = []
 
@@ -31,7 +30,6 @@ def detect_anomaly(df):
     recon = model.predict(X)
     loss = np.mean((recon - X) ** 2, axis=(1, 2))
 
-    # Thresholding
     threshold = np.percentile(loss, 95)
 
     anomalies = loss > threshold

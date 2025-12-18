@@ -1,7 +1,6 @@
 import time
 from collections import defaultdict
 
-# Track flows using (src_ip, dst_ip, protocol)
 flows = defaultdict(lambda: {
     "start_time": time.time(),
     "spkts": 0,

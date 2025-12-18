@@ -7,7 +7,6 @@ class AnomalyRecord(models.Model):
     length = models.IntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    # Results from ML model
     features = models.JSONField(null=True, blank=True)
     reconstruction_error = models.FloatField(null=True, blank=True)
     is_anomaly = models.BooleanField(default=False)

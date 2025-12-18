@@ -19,11 +19,8 @@ class NetworkLogListCreate(ListCreateAPIView):
 
         features_dict, mse, is_anomaly, threshold = run_inference(raw_features)
 
-    # =================================================
-    # SHOW ALL PACKETS IN TERMINAL
-    # =================================================
-        print("=" * 60)
-        print("📦 PACKET RECEIVED")
+        # print("=" * 60)
+        print("Packet Recevied")
         print(f"MSE        : {mse:.6f}")
 
         if threshold is None:
@@ -33,11 +30,9 @@ class NetworkLogListCreate(ListCreateAPIView):
             print(f"Threshold  : {threshold:.6f}")
             print(f"Anomaly    : {is_anomaly}")
 
-        print("=" * 60)
+        print("\n")
+        # print("=" * 60)
 
-    # =================================================
-    # STORE ONLY TRUE ANOMALIES
-    # =================================================
         if threshold is not None and is_anomaly:
             instance = serializer.save(
                 reconstruction_error=mse,
@@ -45,14 +40,13 @@ class NetworkLogListCreate(ListCreateAPIView):
             )
 
             response_data = NetworkLogSerializer(instance).data
-            response_data["message"] = "⚠️ Anomaly detected and stored"
+            response_data["message"] = "Anomaly detected"
 
             return Response(response_data, status=status.HTTP_201_CREATED)
 
-    # Normal or warm-up traffic
         return Response(
             {
-                "message": "✅ Normal traffic (not stored)",
+                "message": "Normal traffic",
                 "reconstruction_error": mse,
                 "threshold": threshold,
                 "is_anomaly": False
