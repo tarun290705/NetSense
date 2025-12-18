@@ -7,19 +7,24 @@ import os
 # ---------------------------
 # 1. Drop unused columns
 # ---------------------------
-def drop_unused_columns(df: pd.DataFrame):
-    cols_to_drop = ["label", "difficulty", "id", "attack_cat"]
-    df = df.drop(columns=[c for c in cols_to_drop if c in df.columns], errors="ignore")
-    return df
+def drop_unused_columns(df):
+    keep_cols = [
+        "dur",
+        "proto",
+        "spkts",
+        "dpkts",
+        "sbytes",
+        "dbytes"
+    ]
+    return df[keep_cols]
+
 
 # ---------------------------
 # 2. Encode categorical columns (e.g., protocol, service, flag)
 # ---------------------------
 def encode_categorical(df):
-    from sklearn.preprocessing import LabelEncoder
-    
     encoders = {}
-    cat_cols = df.select_dtypes(include=["object"]).columns
+    cat_cols = ["proto"]
 
     for col in cat_cols:
         le = LabelEncoder()
@@ -27,6 +32,7 @@ def encode_categorical(df):
         encoders[col] = le
 
     return df, encoders
+
 
 
 # ---------------------------

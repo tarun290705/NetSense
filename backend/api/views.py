@@ -8,39 +8,54 @@ from .ml_engine import run_inference
 
 
 class NetworkLogListCreate(ListCreateAPIView):
-    queryset = AnomalyRecord.objects.all().order_by("-id")
+    queryset = AnomalyRecord.objects.all()
     serializer_class = NetworkLogSerializer
 
-    def perform_create(self, serializer):
-        """
-        1. Read raw ML features from request
-        2. Run LSTM Autoencoder inference
-        3. Convert NumPy values → native Python
-        4. Save clean data into DB
-        """
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        raw_features = self.request.data.get("features")
+        raw_features = serializer.validated_data.get("features")
 
-        if raw_features is None:
-            raise ValueError("Missing 'features' field in request body")
+        features_dict, mse, is_anomaly, threshold = run_inference(raw_features)
 
-        # -------------------------------
-        # Run ML inference
-        # -------------------------------
-        feature_list, mse, anomaly = run_inference(raw_features)
+    # =================================================
+    # SHOW ALL PACKETS IN TERMINAL
+    # =================================================
+        print("=" * 60)
+        print("📦 PACKET RECEIVED")
+        print(f"MSE        : {mse:.6f}")
 
-        # -------------------------------
-        # FIX: Convert NumPy → Python
-        # -------------------------------
-        clean_features = [float(x) for x in feature_list]
-        clean_mse = float(mse)
-        clean_anomaly = bool(anomaly)
+        if threshold is None:
+            print("Threshold  : WARM-UP")
+            print("Status     : Learning baseline")
+        else:
+            print(f"Threshold  : {threshold:.6f}")
+            print(f"Anomaly    : {is_anomaly}")
 
-        # -------------------------------
-        # Save record
-        # -------------------------------
-        serializer.save(
-            features=clean_features,
-            reconstruction_error=clean_mse,
-            is_anomaly=clean_anomaly
+        print("=" * 60)
+
+    # =================================================
+    # STORE ONLY TRUE ANOMALIES
+    # =================================================
+        if threshold is not None and is_anomaly:
+            instance = serializer.save(
+                reconstruction_error=mse,
+                is_anomaly=True
+            )
+
+            response_data = NetworkLogSerializer(instance).data
+            response_data["message"] = "⚠️ Anomaly detected and stored"
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+    # Normal or warm-up traffic
+        return Response(
+            {
+                "message": "✅ Normal traffic (not stored)",
+                "reconstruction_error": mse,
+                "threshold": threshold,
+                "is_anomaly": False
+            },
+            status=status.HTTP_200_OK
         )
