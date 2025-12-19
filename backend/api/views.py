@@ -19,7 +19,6 @@ class NetworkLogListCreate(ListCreateAPIView):
 
         features_dict, mse, is_anomaly, threshold = run_inference(raw_features)
 
-        # print("=" * 60)
         print("Packet Recevied")
         print(f"MSE        : {mse:.6f}")
 
@@ -31,7 +30,6 @@ class NetworkLogListCreate(ListCreateAPIView):
             print(f"Anomaly    : {is_anomaly}")
 
         print("\n")
-        # print("=" * 60)
 
         if threshold is not None and is_anomaly:
             instance = serializer.save(
