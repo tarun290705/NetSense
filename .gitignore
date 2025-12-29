@@ -1,0 +1,25 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data files
+data/raw/
+data/flows/
+data/normalized/
+data/sequences/
+
+# Model files
+*.h5
+*.keras
+*.pkl
+*.npy
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
