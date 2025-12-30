@@ -10,6 +10,8 @@ data/raw/
 data/flows/
 data/normalized/
 data/sequences/
+data/input/
+data/output/
 
 # Model files
 *.h5
